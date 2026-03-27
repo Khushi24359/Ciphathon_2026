@@ -4,7 +4,8 @@ import {
   ShieldAlert, ShieldCheck, Mail, User, AlertTriangle, Activity,
   Link2, Shield, ChevronRight, Fingerprint, Zap, X, Network, Crosshair,
   HeartPulse, CheckCircle2, Globe, LayoutDashboard, Sun, Moon,
-  Play, Square, ChevronDown, BookOpen, TrendingUp, Lock, Eye
+  Play, Square, ChevronDown, BookOpen, TrendingUp, Lock, Eye,
+  FileText, Download, Copy, Calendar, Info, Target, AlertCircle
 } from 'lucide-react';
 import IdentityGraph from '../components/IdentityGraph';
 import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
@@ -405,6 +406,159 @@ const RemediationPage = ({ recommendations, dark }) => {
   );
 };
 
+// ─── EXECUTIVE REPORT COMPONENT ────────────────────────────────────────────────
+const ExecutiveReport = ({ result, email, username, dark }) => {
+  if (!result) return null;
+
+  const handlePrint = () => window.print();
+  const handleCopy = () => {
+    const text = document.getElementById('report-content').innerText;
+    navigator.clipboard.writeText(text);
+    alert('Report copied to clipboard!');
+  };
+
+  const sections = [
+    {
+      title: '1. Basic Overview',
+      icon: Info,
+      content: [
+        `Email analyzed: ${email}`,
+        `Username provided: ${username || 'N/A'}`,
+        `Scan timestamp: ${new Date().toLocaleString()}`,
+        `Analysis Engine: Sherlock Holmes Investigative Engine`,
+      ]
+    },
+    {
+      title: '2. Breach Summary',
+      icon: ShieldAlert,
+      content: result.breach_status ? [
+        `Total breaches found: ${result.breach_details.length}`,
+        `Major breaches: ${result.breach_details.slice(0, 3).map(b => b.Name).join(', ')}`,
+        `Leaked data types: ${Array.from(new Set(result.breach_details.flatMap(b => b.DataClasses))).slice(0, 5).join(', ')}`,
+      ] : ['No digital breaches found in known databases.']
+    },
+    {
+      title: '3. Risk Assessment',
+      icon: AlertCircle,
+      content: [
+        `Risk Score: ${result.risk_score} / 100`,
+        `Risk Level: ${result.risk_level}`,
+        `Factor: ${result.risk_level === 'High' ? 'Significant exposure across both breach registries and social surfaces.' : 'Moderate exposure detected in identity fragments.'}`,
+      ]
+    },
+    {
+      title: '4. Identity Exposure',
+      icon: Network,
+      content: [
+        `Number of active accounts detected: ${result.simulated_accounts.length}`,
+        `Major platforms identified: ${result.simulated_accounts.slice(0, 5).map(a => a.platform).join(', ')}`,
+        `Username reuse: Detected unique handles across ${result.simulated_accounts.length} platforms.`,
+        `Confidence Index: ${(result.correlation_engine?.mapping_confidence ?? 0).toFixed(0)}%`
+      ]
+    },
+    {
+      title: '5. Key Attack Insights',
+      icon: Target,
+      content: result.attack_insights.slice(0, 3).map(insight => insight)
+    },
+    {
+      title: '6. Attack Simulation Summary',
+      icon: Crosshair,
+      content: [
+        result.attack_narrative[0].substring(0, 150) + "...",
+        "Attacker methodology focuses on correlating breach data with verified social footprints to establish a baseline for targeted phishing or account takeover.",
+      ]
+    },
+    {
+      title: '7. Recommendations Summary',
+      icon: ShieldCheck,
+      content: result.recommendations.slice(0, 5).map(rec => rec)
+    }
+  ];
+
+  const cardClass = 'bg-card border border-border shadow-md';
+  const textClass = 'text-foreground';
+  const mutedClass = 'text-muted-foreground';
+
+  return (
+    <div className="w-full max-w-4xl mx-auto space-y-8 px-4 py-12 animate-in fade-in slide-in-from-bottom-5 duration-500">
+      {/* Controls Row - Hidden on Print */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-2 print:hidden">
+        <div>
+          <h2 className={`text-2xl font-bold ${textClass}`}>Executive Intelligence Report</h2>
+          <p className={`text-sm ${mutedClass}`}>Professional summary of your digital footprint and risk profile.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <button onClick={handleCopy} className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg text-sm font-semibold text-foreground transition-all">
+            <Copy className="w-4 h-4" /> Copy Report
+          </button>
+          <button onClick={handlePrint} className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 transition-all">
+            <Download className="w-4 h-4" /> Download PDF
+          </button>
+        </div>
+      </div>
+
+      {/* The Report Document */}
+      <div id="report-content" className={`${cardClass} rounded-2xl p-8 sm:p-12 print:bg-white print:text-black print:p-0 print:border-none print:shadow-none`}>
+        {/* Header Section */}
+        <div className="border-b border-border pb-8 mb-8 flex flex-col sm:flex-row justify-between items-start gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center">
+              <Fingerprint className="w-7 h-7 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-black tracking-tight text-foreground print:text-black">PersonaTrace</h1>
+              <p className={`text-xs font-bold uppercase tracking-widest ${mutedClass} print:text-slate-500`}>Security Audit & Intel Summary</p>
+            </div>
+          </div>
+          <div className="text-left sm:text-right">
+            <p className="text-xs font-bold text-primary uppercase mb-1">Confidential Audit</p>
+            <p className={`text-xs font-semibold ${mutedClass} print:text-slate-500`}>Ref ID: {Math.random().toString(36).substring(7).toUpperCase()}</p>
+            <p className={`text-xs font-semibold ${mutedClass} print:text-slate-500`}>{new Date().toLocaleDateString()}</p>
+          </div>
+        </div>
+
+        {/* Report Body */}
+        <div className="space-y-10">
+          {sections.map((section, idx) => (
+            <div key={idx} className="page-break-inside-avoid">
+              <div className="flex items-center gap-3 mb-4">
+                <div className={`p-1.5 rounded-lg ${dark ? 'bg-primary/10' : 'bg-primary/5'}`}>
+                  <section.icon className="w-4 h-4 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground print:text-black">{section.title}</h3>
+              </div>
+              <ul className="space-y-3 ml-12">
+                {section.content.map((item, i) => (
+                  <li key={i} className={`text-sm leading-relaxed ${mutedClass} print:text-slate-700 relative`}>
+                    <span className="absolute -left-5 top-2.5 w-1.5 h-1.5 rounded-full bg-primary/40 print:bg-black/20" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="mt-16 pt-8 border-t border-border flex flex-col sm:flex-row justify-between items-center gap-4">
+          <p className={`text-[10px] font-bold ${mutedClass} print:text-slate-400`}>© 2026 PersonaTrace Forensic Intelligence</p>
+          <p className={`text-[10px] font-bold ${mutedClass} print:text-slate-400`}>Generated via Sherlock Investigative Engine</p>
+        </div>
+      </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body * { visibility: hidden; background: white !important; }
+          #report-content, #report-content * { visibility: visible; }
+          #report-content { position: absolute; left: 0; top: 0; width: 100%; border: none !important; box-shadow: none !important; }
+          .page-break-inside-avoid { page-break-inside: avoid; }
+        }
+      `}} />
+    </div>
+  );
+};
+
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 export default function Dashboard({ dark, toggleTheme }) {
   const [activeTab, setActiveTab] = useState('home');
@@ -573,7 +727,7 @@ export default function Dashboard({ dark, toggleTheme }) {
                 {[
                   { l: 'Breaches Found', v: breaches.length, c: 'text-red-500' },
                   { l: 'Confidence', v: `${(result.correlation_engine?.mapping_confidence ?? 0).toFixed(0)}%`, c: 'text-primary' },
-                  { l: 'Platforms Scanned', v: result.simulated_accounts?.length ?? 0, c: 'text-emerald-500' },
+                  { l: 'Platforms Scanned', v: result.platforms_probed ?? 400, c: 'text-emerald-500' },
                 ].map((s, i) => (
                   <div key={i} className="bg-background border border-border rounded-xl p-4">
                     <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-muted-foreground">{s.l}</p>
@@ -657,6 +811,7 @@ export default function Dashboard({ dark, toggleTheme }) {
         {activeTab === 'graph' && renderGraph()}
         {activeTab === 'simulation' && renderSimulation()}
         {activeTab === 'remediation' && renderRemediation()}
+        {activeTab === 'report' && <ExecutiveReport result={result} email={email} username={username} dark={dark} />}
       </main>
 
       {loading && (

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Fingerprint, Sun, Moon, LayoutDashboard, Globe, Network, Crosshair, HeartPulse } from 'lucide-react';
+import { Fingerprint, Sun, Moon, LayoutDashboard, Globe, Network, Crosshair, HeartPulse, FileText } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = ({ dark, toggleTheme, activeTab, setActiveTab, isLanding }) => {
@@ -30,6 +30,7 @@ const Navbar = ({ dark, toggleTheme, activeTab, setActiveTab, isLanding }) => {
               { id: 'graph', l: 'Graph', i: Network },
               { id: 'simulation', l: 'Attack Simulation', i: Crosshair },
               { id: 'remediation', l: 'Remediation', i: HeartPulse },
+              { id: 'report', l: 'Executive Report', i: FileText },
             ].map(tab => (
               <button
                 key={tab.id}

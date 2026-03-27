@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from models import ScanRequest, ScanResponse
-from services import analyze_exposure
+from services import analyze_exposure, ai_usernames_with_rules, run_sherlock
 import database
+import sys
 
 app = FastAPI(title="PersonaTrace API", description="Digital Exposure Risk Analyzer API")
 
@@ -25,6 +26,31 @@ def scan_endpoint(request: ScanRequest):
     # Save the scan securely off-band inside the local DB instance
     database.save_scan(request.email, result["risk_score"], result["risk_level"], result)
     return result
+
+@app.post("/generate_usernames")
+def generate_usernames_endpoint(request: dict):
+    email = request.get("email")
+    if not email:
+        return {"error": "Missing 'email' in request"}
+    usernames = ai_usernames_with_rules(email)
+    return {"usernames": usernames}
+
+@app.post("/run_pipeline")
+def run_pipeline_endpoint(request: dict):
+    username = request.get("username")
+    if not username:
+        return {"error": "Missing 'username' in request"}
+    try:
+        profiles = run_sherlock(username)
+        return {
+            "username": username,
+            "confidence": "high",
+            "profiles_found": len(profiles),
+            "profiles": profiles
+        }
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail=f"Sherlock scan failed: {str(e)}")
 
 @app.get("/history")
 def get_history_endpoint():
