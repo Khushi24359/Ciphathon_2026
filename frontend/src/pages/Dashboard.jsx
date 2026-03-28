@@ -583,19 +583,25 @@ export default function Dashboard({ dark, toggleTheme }) {
     return ok;
   };
 
-  const handleScan = async (e) => {
+  const handleScan = async (e, overrideUsername = null) => {
     if (e) e.preventDefault();
+    const finalUsername = overrideUsername || username;
+    
     if (!email || !validateEmail(email)) {
       setEmailError('A valid email address is required to run a trace.');
       return;
     }
     setLoading(true); setError(''); setResult(null);
     try {
-      const res = await axios.post('http://127.0.0.1:8000/scan', { email, username: username || null });
+      const res = await axios.post('http://127.0.0.1:8000/scan', { 
+        email, 
+        username: finalUsername || null 
+      });
       setResult(res.data);
-      setActiveTab('breaches');
+      // Stay on current tab if it was a deep scan from graph
+      if (!overrideUsername) setActiveTab('breaches');
     } catch {
-      setError('Could not connect to the PersonaTrace backend. Make sure it is running on port 8000.');
+      setError('Trace execution failed. Ensure the PersonaTrace backend is operational.');
     } finally { setLoading(false); }
   };
 
@@ -723,9 +729,10 @@ export default function Dashboard({ dark, toggleTheme }) {
                 <span className={`text-xs font-bold uppercase tracking-widest ${muted}`}>Traced Identity</span>
                 <span className={`ml-auto text-sm font-semibold text-foreground`}>{email}</span>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
                   { l: 'Breaches Found', v: breaches.length, c: 'text-red-500' },
+                  { l: 'Active Profiles', v: result.simulated_accounts?.length ?? 0, c: 'text-amber-500' },
                   { l: 'Confidence', v: `${(result.correlation_engine?.mapping_confidence ?? 0).toFixed(0)}%`, c: 'text-primary' },
                   { l: 'Platforms Scanned', v: result.platforms_probed ?? 400, c: 'text-emerald-500' },
                 ].map((s, i) => (
@@ -743,13 +750,51 @@ export default function Dashboard({ dark, toggleTheme }) {
           </div>
         </div>
 
+        {/* Discovered Profiles Section */}
+        {result.simulated_accounts?.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Globe className="w-4 h-4 text-amber-500" />
+              </div>
+              <h3 className={`text-lg font-bold ${text}`}>Verified Identity Surface</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {result.simulated_accounts.map((acc, i) => (
+                <a key={i} href={acc.url} target="_blank" rel="noopener noreferrer" 
+                   className={`${card} rounded-xl p-4 flex items-center justify-between group hover:border-amber-500/50 transition-all no-underline`}>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-amber-500 uppercase tracking-tighter">{acc.platform}</span>
+                    <span className={`text-sm font-semibold ${text} truncate max-w-[120px]`}>@{acc.username}</span>
+                  </div>
+                  <Link2 className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 mt-12">
+          <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
+            <ShieldAlert className="w-4 h-4 text-red-500" />
+          </div>
+          <h3 className={`text-lg font-bold ${text}`}>Breach Intelligence Feed</h3>
+        </div>
+
         {breaches.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {breaches.map((b, i) => (
               <div key={i} className={`${card} rounded-2xl p-6 hover:scale-[1.01] transition-transform`}>
                 <div className="flex justify-between items-start mb-3">
                   <h4 className="text-base font-bold truncate max-w-[60%] text-foreground">{b.Name}</h4>
-                  <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-red-500/10 text-red-500 uppercase">{b.BreachDate}</span>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[9px] font-black px-2.5 py-1 rounded-full bg-red-500/10 text-red-500 uppercase">
+                      {b.BreachDate?.includes('-') ? b.BreachDate : 'Historical'}
+                    </span>
+                    <span className="text-[10px] font-bold text-muted-foreground mt-1 tracking-tighter">
+                      Year: {b.BreachDate?.split('-')[0] || (b.Name.match(/\d{4}/) || ['Unknown'])[0]}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-xs leading-relaxed mb-4 line-clamp-3 text-muted-foreground">{b.Description}</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -779,7 +824,13 @@ export default function Dashboard({ dark, toggleTheme }) {
         </div>
       ) : (
         <div className={`${card} rounded-3xl overflow-hidden`} style={{ height: '75vh', minHeight: '600px' }}>
-          <IdentityGraph data={result.graph_data ?? { nodes: [], edges: [] }} />
+          <IdentityGraph 
+            data={result.graph_data ?? { nodes: [], edges: [] }} 
+            onNodeClick={(u) => {
+              setUsername(u);
+              handleScan(null, u);
+            }} 
+          />
         </div>
       )}
     </div>

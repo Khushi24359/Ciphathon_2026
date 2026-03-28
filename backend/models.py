@@ -18,3 +18,4 @@ class ScanResponse(BaseModel):
     graph_data: Dict[str, List[Dict[str, Any]]]
     correlation_engine: Optional[Dict[str, Any]] = None
     platforms_probed: Optional[int] = 0
+    possible_usernames: List[str] = []

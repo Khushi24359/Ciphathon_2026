@@ -6,7 +6,7 @@ import { Maximize2, Minimize2, RefreshCw, Layers, ZoomIn, ZoomOut } from 'lucide
 // Register advanced layout
 cytoscape.use(coseBilkent);
 
-const IdentityGraph = ({ data }) => {
+const IdentityGraph = ({ data, onNodeClick }) => {
   const containerRef = useRef(null);
   const cyRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -57,15 +57,15 @@ const IdentityGraph = ({ data }) => {
           selector: "node",
           style: {
             label: "data(label)",
-            "background-color": "#334155",
+            "background-color": "#E2E8F0",
+            "shape": "ellipse",
             "text-valign": "bottom",
             "text-halign": "center",
             "text-margin-y": 8,
             "font-size": "10px",
-            "font-weight": "bold",
-            color: "#94a3b8",
-            "text-outline-width": 2,
-            "text-outline-color": "#030712",
+            "font-weight": "normal", // PLAIN TEXT (NOT BOLD)
+            color: "#000000", // PLAIN BLACK COLOR
+            "text-outline-width": 0, // REMOVE OUTLINE
             width: "data(size)",
             height: "data(size)",
             "transition-property": "background-color, line-color, target-arrow-color, width, height, opacity",
@@ -75,49 +75,56 @@ const IdentityGraph = ({ data }) => {
         {
           selector: 'node[type="user"]',
           style: { 
-            'background-color': '#2563eb', 
-            'shape': 'star', 
+            'background-color': '#BFDBFE', // Soft Pastel Blue
             'border-width': 4, 
-            'border-color': '#60a5fa',
-            "shadow-blur": 30,
-            "shadow-color": "#2563eb",
-            "shadow-opacity": 0.7,
-            color: "#fff",
+            'border-color': '#3B82F6',
+            "shadow-blur": 20,
+            "shadow-color": "#BFDBFE",
+            "shadow-opacity": 0.6,
             "font-size": "12px"
           } 
         },
         {
           selector: 'node[type="email"]',
           style: { 
-            'background-color': '#10b981', 
-            'shape': 'round-rectangle', 
+            'background-color': '#A7F3D0', // Soft Pastel Emerald
             "shadow-blur": 15, 
-            "shadow-color": "#10b981" 
+            "shadow-color": "#A7F3D0" 
           } 
         },
         {
-          selector: 'node[type="username"]',
+          selector: 'node[type="username"][confidence="verified"]',
           style: { 
-            'background-color': '#8b5cf6', 
-            'shape': 'rectangle', 
+            'background-color': '#A7F3D0', // Soft Pastel Emerald
+            "shadow-blur": 15, 
+            "shadow-color": "#A7F3D0",
+            "border-width": 3,
+            "border-color": "#10B981"
+          } 
+        },
+        {
+          selector: 'node[type="username"][confidence="predicted"]',
+          style: { 
+            'background-color': '#DDD6FE', // Soft Pastel Lavender
             "shadow-blur": 10, 
-            "shadow-color": "#8b5cf6" 
+            "shadow-color": "#DDD6FE",
+            "opacity": 0.95
           } 
         },
         {
-          selector: 'node[type="account"]',
+          selector: 'node[type="account"], node[type="platform"]',
           style: { 
-            'background-color': '#f59e0b', 
-            'shape': 'ellipse' 
+            'background-color': '#FDE68A', // Soft Pastel Gold
+            "shadow-blur": 15,
+            "shadow-color": "#FDE68A"
           } 
         },
         {
           selector: 'node[type="breach"]',
           style: {
-            "background-color": "#ef4444",
-            "shape": "octagon",
-            "shadow-color": "#ef4444",
-            "shadow-blur": 25,
+            "background-color": "#FECDD3", // Soft Pastel Salmon
+            "shadow-color": "#FECDD3",
+            "shadow-blur": 20,
             "shadow-opacity": 0.6
           } 
         },
@@ -125,38 +132,38 @@ const IdentityGraph = ({ data }) => {
           selector: "edge",
           style: {
             width: 2,
-            "line-color": "#334155",
-            "target-arrow-color": "#334155",
+            "line-color": "#CBD5E1", 
+            "target-arrow-color": "#CBD5E1",
             "target-arrow-shape": "triangle",
-            "curve-style": "bezier", // Requirements: Curved edges
+            "curve-style": "bezier", 
             "label": "data(label)",
-            "font-size": "8px",
-            "color": "#64748b",
-            "text-background-opacity": 0.8,
-            "text-background-color": "#030712",
-            "text-background-padding": "2px",
+            "font-size": "9px",
+            "color": "#64748B",
+            "text-background-opacity": 1,
+            "text-background-color": "#FFFFFF", 
+            "text-background-padding": "3px",
             "text-rotation": "autorotate",
             "line-style": "dashed",
-            "opacity": 0.5 
+            "opacity": 0.6 
           }
         },
         {
           selector: 'edge[label="exposed in"]',
-          style: { "line-color": "#ef4444", "opacity": 0.7, "line-style": "solid" }
+          style: { "line-color": "#FECDD3", "opacity": 1, "line-style": "solid", width: 2 }
         },
         {
           selector: 'edge[label="primary handle"], edge[label="owns"]',
-          style: { "line-color": "#2563eb", "opacity": 0.8, "line-style": "solid", width: 3 }
+          style: { "line-color": "#BFDBFE", "opacity": 1, "line-style": "solid", width: 3 }
         },
-        // Requirements: Hover & Detail Effects
         {
-          selector: 'node:selected, node:active, node:hover',
+          selector: 'node:selected, node:active, node:hover, node[is_clickable]',
           style: {
-            "border-width": 4,
-            "border-color": "#fff",
-            "shadow-blur": 50,
-            scale: 1.1,
-            "opacity": 1
+            "border-width": 5,
+            "border-color": "#1E293B",
+            "shadow-blur": 40,
+            scale: 1.15,
+            "opacity": 1,
+            "cursor": "pointer"
           }
         }
       ],
@@ -169,18 +176,25 @@ const IdentityGraph = ({ data }) => {
       }
     });
 
-    // Smarter expand/collapse:
-    //   - Leaf nodes (no children) → only fade themselves, NEVER touch parent
-    //   - Parent nodes → collapse/expand their own descendants only
     cy.on('tap', 'node', function(evt) {
         const node = evt.target;
         if (node.id() === 'user_root') return;
 
-        const children = node.outgoers('node'); // nodes this node points TO
+        if (node.data('type') === 'platform' && node.data('url')) {
+            window.open(node.data('url'), '_blank');
+            return;
+        }
+
+        if (node.data('type') === 'username' && onNodeClick) {
+            const cleanUsername = node.data('label').replace(/^@/, '');
+            onNodeClick(cleanUsername);
+            return;
+        }
+
+        const children = node.outgoers('node'); 
         const hasChildren = children.length > 0;
 
         if (!hasChildren) {
-            // True leaf: just dim/restore this single node
             if (node.hasClass('leaf-dimmed')) {
                 node.removeClass('leaf-dimmed');
                 node.animate({ style: { opacity: 1 } }, { duration: 350 });
@@ -193,7 +207,6 @@ const IdentityGraph = ({ data }) => {
             return;
         }
 
-        // Parent node: collapse/expand its entire descendant subtree
         if (node.hasClass('collapsed')) {
             node.removeClass('collapsed');
             node.successors().show();
@@ -203,17 +216,14 @@ const IdentityGraph = ({ data }) => {
         }
     });
 
-
     cy.on('mouseover', 'node', function(evt){
         const node = evt.target;
-        node.style('text-outline-color', '#2563eb');
-        node.style('color', '#fff');
+        node.style('color', '#3b82f6');
     });
 
     cy.on('mouseout', 'node', function(evt){
         const node = evt.target;
-        node.style('text-outline-color', '#030712');
-        node.style('color', '#94a3b8');
+        node.style('color', '#000000');
     });
     
     cyRef.current = cy;
@@ -223,49 +233,49 @@ const IdentityGraph = ({ data }) => {
         cyRef.current.destroy();
       }
     };
-  }, [data, isFullscreen]);
+  }, [data, isFullscreen, onNodeClick]);
 
   return (
-    <div className={`w-full bg-slate-900 rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl transition-all duration-500 flex flex-col ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : 'h-[750px] mt-2'}`}>
+    <div className={`w-full bg-white rounded-[2rem] overflow-hidden border border-slate-200 shadow-2xl transition-all duration-500 flex flex-col ${isFullscreen ? 'fixed inset-0 z-50 m-0 rounded-none' : 'h-[800px] mt-2'}`}>
       
-      {/* Dynamic Graph Utility Hub */}
-      <div className="p-5 border-b border-white/5 bg-black/40 backdrop-blur-xl flex flex-wrap gap-4 justify-between items-center z-20">
+      {/* Light Mode Utility Hub */}
+      <div className="p-5 border-b border-slate-100 bg-slate-50/80 backdrop-blur-xl flex flex-wrap gap-4 justify-between items-center z-20">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-500/20 p-2.5 rounded-xl border border-blue-500/30">
-             <Layers className={`w-5 h-5 text-blue-400 ${isComputing ? 'animate-pulse' : ''}`} />
+          <div className="bg-blue-600/10 p-2.5 rounded-xl border border-blue-600/20">
+             <Layers className={`w-5 h-5 text-blue-600 ${isComputing ? 'animate-pulse' : ''}`} />
           </div>
           <div>
-            <h3 className="text-xs font-black text-white uppercase tracking-[0.25em] flex items-center gap-2">
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-[0.25em] flex items-center gap-2">
               Identity Correlation Graph
               <span className={`w-2 h-2 rounded-full ${isComputing ? 'bg-amber-500 animate-ping' : 'bg-green-500 shadow-[0_0_8px_#10b981]'}`}></span>
             </h3>
-            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Relational Mapping Analysis</p>
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">Relational Mapping Analysis</p>
           </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="flex bg-black/40 rounded-xl p-1 border border-white/5">
+          <div className="flex bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
             <button 
                 onClick={() => cyRef.current.zoom(cyRef.current.zoom() * 1.2)}
-                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors"
+                className="p-2 hover:bg-slate-50 rounded-lg text-slate-600 transition-colors"
                 title="Zoom In"
             ><ZoomIn className="w-4 h-4" /></button>
             <button 
                 onClick={() => cyRef.current.zoom(cyRef.current.zoom() * 0.8)}
-                className="p-2 hover:bg-white/5 rounded-lg text-slate-400 transition-colors"
+                className="p-2 hover:bg-slate-50 rounded-lg text-slate-600 transition-colors"
                 title="Zoom Out"
             ><ZoomOut className="w-4 h-4" /></button>
-            <div className="w-px h-4 bg-white/10 mx-1 my-auto"></div>
+            <div className="w-px h-4 bg-slate-200 mx-1 my-auto"></div>
             <button 
                 onClick={() => runLayout('cose-bilkent')}
-                className={`p-2 hover:bg-white/5 rounded-lg text-blue-400 transition-all ${isComputing ? 'animate-spin' : ''}`}
+                className={`p-2 hover:bg-slate-50 rounded-lg text-blue-600 transition-all ${isComputing ? 'animate-spin' : ''}`}
                 title="Optimize Structure (Bilkent Cose)"
             ><RefreshCw className="w-4 h-4" /></button>
           </div>
 
           <button 
             onClick={() => setIsFullscreen(!isFullscreen)} 
-            className="p-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-white transition-all shadow-lg flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest"
+            className="p-2 bg-blue-600 hover:bg-blue-700 rounded-xl text-white transition-all shadow-md flex items-center gap-2 px-4 py-2 text-[10px] font-black uppercase tracking-widest"
           >
             {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             {isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
@@ -273,30 +283,47 @@ const IdentityGraph = ({ data }) => {
         </div>
       </div>
 
-      {/* Graph Legend */}
-      <div className="absolute top-24 left-8 z-10 pointer-events-none space-y-2 opacity-60">
-         <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-slate-400">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div> Root Center
-         </div>
-         <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-slate-400">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Verified Channels
-         </div>
-         <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-widest text-slate-400">
-            <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div> Exposure Nodes
-         </div>
-         <div className="mt-4 pt-4 border-t border-white/5">
-            <p className="text-[10px] font-mono text-slate-500 italic">TIP: Click nodes to expand/collapse clusters</p>
-         </div>
+      {/* Light Mode Visual Topology Key */}
+      <div className="absolute top-24 right-8 z-10 p-5 bg-white/90 backdrop-blur-md rounded-[1.5rem] border border-slate-200 space-y-3 shadow-xl pointer-events-none">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-3 border-b border-slate-100 pb-2">Visual Topology Key</p>
+          
+          <div className="flex items-center gap-4">
+              <div className="w-4 h-4 bg-[#BFDBFE] rounded-full border-2 border-[#3B82F6] shadow-sm"></div>
+              <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">Identity Root</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+              <div className="w-4 h-4 bg-[#A7F3D0] rounded-full border-2 border-[#10B981] shadow-sm"></div>
+              <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">Verified Handle</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+              <div className="w-4 h-4 bg-[#DDD6FE] rounded-full border border-purple-300 shadow-sm"></div>
+              <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Predicted Alias</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+              <div className="w-4 h-4 bg-[#FDE68A] rounded-full border border-amber-300 shadow-sm"></div>
+              <span className="text-[9px] font-bold text-slate-600 uppercase tracking-widest whitespace-nowrap">Active Profile</span>
+          </div>
+
+          <div className="flex items-center gap-4">
+              <div className="w-4 h-4 bg-[#FECDD3] rounded-full border border-rose-300 shadow-sm"></div>
+              <span className="text-[9px] font-bold text-red-500 uppercase tracking-widest whitespace-nowrap">Exposure Point</span>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <p className="text-[9px] font-mono text-slate-400 italic">Interactive: Discovery Tree Mapping</p>
+          </div>
       </div>
 
-      {/* Main Render Area */}
       <div 
         ref={containerRef} 
-        className="flex-1 w-full bg-[#030712] relative"
-        style={{ backgroundImage: 'radial-gradient(rgba(99,102,241,0.05) 1px, transparent 1px)', backgroundSize: '30px 30px' }}
+        className="flex-1 w-full bg-white relative"
+        style={{ backgroundImage: 'radial-gradient(rgba(148,163,184,0.1) 1px, transparent 1px)', backgroundSize: '25px 25px' }}
       >
           {isComputing && (
-              <div className="absolute bottom-8 right-8 z-30 px-6 py-3 bg-black/80 border border-blue-500/30 rounded-2xl text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-3 shadow-2xl backdrop-blur-xl">
+              <div className="absolute bottom-8 right-8 z-30 px-6 py-3 bg-white/90 border border-slate-200 rounded-2xl text-[10px] font-black text-blue-600 uppercase tracking-widest flex items-center gap-3 shadow-lg backdrop-blur-xl">
                   <RefreshCw className="w-4 h-4 animate-spin" /> 
                   Optimizing Topology...
               </div>
