@@ -1,13 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models import ScanRequest, ScanResponse
 from services import analyze_exposure, ai_usernames_with_rules, run_sherlock
-import database
-import sys
 
-app = FastAPI(title="PersonaTrace API", description="Digital Exposure Risk Analyzer API")
+app = FastAPI(title="PersonaTrace API")
 
-# Allow CORS for local dev
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,53 +13,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("startup")
-def on_startup():
-    database.init_db()
-
 @app.post("/scan", response_model=ScanResponse)
 def scan_endpoint(request: ScanRequest):
-    result = analyze_exposure(request.email, request.username, request.phone)
-    # Save the scan securely off-band inside the local DB instance
-    database.save_scan(request.email, result["risk_score"], result["risk_level"], result)
-    return result
+    return analyze_exposure(request.email, request.username, request.phone)
 
 @app.post("/generate_usernames")
 def generate_usernames_endpoint(request: dict):
     email = request.get("email")
-    if not email:
-        return {"error": "Missing 'email' in request"}
-    usernames = ai_usernames_with_rules(email)
-    return {"usernames": usernames}
+    if not email: return {"error": "Missing email"}
+    return {"usernames": ai_usernames_with_rules(email)}
 
 @app.post("/run_pipeline")
 def run_pipeline_endpoint(request: dict):
     username = request.get("username")
-    if not username:
-        return {"error": "Missing 'username' in request"}
+    if not username: return {"error": "Missing username"}
     try:
         profiles = run_sherlock(username)
-        return {
-            "username": username,
-            "confidence": "high",
-            "profiles_found": len(profiles),
-            "profiles": profiles
-        }
+        return {"username": username, "profiles": profiles, "found": len(profiles)}
     except Exception as e:
-        from fastapi import HTTPException
-        raise HTTPException(status_code=500, detail=f"Sherlock scan failed: {str(e)}")
-
-@app.get("/history")
-def get_history_endpoint():
-    return database.get_history()
-
-@app.get("/history/{scan_id}", response_model=ScanResponse)
-def get_history_scan_endpoint(scan_id: int):
-    data = database.get_scan(scan_id)
-    if data:
-        return data
-    return {"error": "not found"}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "PersonaTrace API is running"}
+    return {"status": "ok", "message": "Backend is running without database"}
+

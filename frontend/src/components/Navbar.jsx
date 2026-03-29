@@ -2,13 +2,28 @@ import React from 'react';
 import { Fingerprint, Sun, Moon, LayoutDashboard, Globe, Network, Crosshair, HeartPulse, FileText } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Navbar = ({ dark, toggleTheme, activeTab, setActiveTab, isLanding }) => {
+const Navbar = ({ dark, toggleTheme, activeTab, setActiveTab, isLanding, role = 'auditor' }) => {
   const location = useLocation();
   const isDashboard = location.pathname === '/scan';
 
   const navClass = 'bg-background/90 border-b border-border shadow-sm backdrop-blur-md sticky top-0 z-50 print:hidden';
   const textClass = 'text-foreground';
   const mutedClass = 'text-muted-foreground';
+
+  // Role-based tabs
+  const dashboardTabs = role === 'user'
+    ? [
+        { id: 'breaches', l: 'Breach Analysis', i: Globe },
+        { id: 'remediation', l: 'Remediation', i: HeartPulse },
+        { id: 'report', l: 'Executive Summary', i: FileText },
+      ]
+    : [
+        { id: 'breaches', l: 'Breach Analysis', i: Globe },
+        { id: 'graph', l: 'Graph', i: Network },
+        { id: 'simulation', l: 'Attack Simulation', i: Crosshair },
+        { id: 'remediation', l: 'Remediation', i: HeartPulse },
+        { id: 'report', l: 'Executive Report', i: FileText },
+      ];
 
   return (
     <nav className={navClass}>
@@ -24,14 +39,7 @@ const Navbar = ({ dark, toggleTheme, activeTab, setActiveTab, isLanding }) => {
         {/* Tabs - Only show on Dashboard */}
         {isDashboard && setActiveTab && (
           <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide flex-1">
-            {[
-              { id: 'home', l: 'Home', i: LayoutDashboard },
-              { id: 'breaches', l: 'Breach Analysis', i: Globe },
-              { id: 'graph', l: 'Graph', i: Network },
-              { id: 'simulation', l: 'Attack Simulation', i: Crosshair },
-              { id: 'remediation', l: 'Remediation', i: HeartPulse },
-              { id: 'report', l: 'Executive Report', i: FileText },
-            ].map(tab => (
+            {dashboardTabs.map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}

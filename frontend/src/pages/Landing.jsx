@@ -105,7 +105,7 @@ export default function Landing({ dark, toggleTheme }) {
               animate="visible"
             >
               <motion.button
-                onClick={() => navigate("/scan")}
+                onClick={() => navigate("/roles")}
                 className="px-8 py-4 bg-primary text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 hover:bg-primary/90 transition-all flex items-center gap-2"
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}
@@ -114,7 +114,7 @@ export default function Landing({ dark, toggleTheme }) {
                 Launch Intelligence Trace <Zap className="w-4 h-4 fill-current" />
               </motion.button>
               <motion.button
-                onClick={() => navigate("/scan", { state: { email: "demo@personatrace.com" } })}
+                onClick={() => navigate("/roles", { state: { email: "demo@personatrace.com" } })}
                 className="px-8 py-4 bg-card border border-border text-foreground font-bold rounded-xl hover:bg-muted/50 transition-all"
                 variants={itemVariants}
                 whileHover={{ scale: 1.02 }}

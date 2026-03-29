@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Landing from './pages/Landing';
+import RoleSelection from './pages/RoleSelection';
 import Dashboard from './pages/Dashboard';
 
 // ─── THEME HOOK ────────────────────────────────────────────────────────────
@@ -34,6 +35,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Landing dark={dark} toggleTheme={toggleTheme} />} />
+        <Route path="/roles" element={<RoleSelection dark={dark} toggleTheme={toggleTheme} />} />
         <Route path="/scan" element={<Dashboard dark={dark} toggleTheme={toggleTheme} />} />
         {/* Redirect unknown routes to landing */}
         <Route path="*" element={<Navigate to="/" replace />} />

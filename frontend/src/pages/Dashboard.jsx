@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import {
   ShieldAlert, ShieldCheck, Mail, User, AlertTriangle, Activity,
@@ -305,14 +306,87 @@ const AttackSimulationSuite = ({ narrative, riskScore, dark }) => {
 };
 
 // ─── REMEDIATION PAGE ─────────────────────────────────────────────────────────
-const RemediationPage = ({ recommendations, dark }) => {
+const RemediationPage = ({ recommendations, role, dark }) => {
   const [checked, setChecked] = useState({});
   const toggle = (i) => setChecked(p => ({ ...p, [i]: !p[i] }));
 
   const card = 'bg-card border border-border shadow-md';
   const muted = 'text-muted-foreground';
 
-  const categories = [
+  const getSimpleStep = (rec) => {
+    const map = {
+      'Immediately rotate the password for the breached accounts and any platforms sharing the same credential.': {
+        what: 'Change your passwords',
+        how: 'Go to each website where you use this email and update your password immediately.',
+        why: 'Locks out hackers who might have stolen your old password in a data leak.'
+      },
+      'Audit your password manager to ensure zero credential reuse across financial or core email accounts.': {
+        what: 'Check for reused passwords',
+        how: 'Open your password manager and ensure every account has a different, random password.',
+        why: 'Stops a "domino effect" where one hack leads to all your accounts being compromised.'
+      },
+      'Enforce strict Multi-Factor Authentication (MFA) on all critical nodes, preferring hardware keys (YubiKey) over standard apps.': {
+        what: 'Turn on extra security (MFA)',
+        how: 'Go to security settings on Google, bank, and social media. Turn on "2-Step Verification".',
+        why: 'Even if a hacker has your password, they still can\'t get in without your physical phone or key.'
+      },
+      'Monitor financial accounts linked to this email address for unauthorized access, and freeze credit reporting if banking details were potentially leaked.': {
+        what: 'Watch your bank statements',
+        how: 'Log into your bank app weekly. If you see weird charges, call the bank and "freeze" your cards.',
+        why: 'Allows you to stop identity theft and fraud before it becomes a major financial problem.'
+      },
+      'Implement data-compartmentalization: Use disconnected pseudonyms and separate emails for personal vs. professional web presence.': {
+        what: 'Separate your online identities',
+        how: 'Use one email for work and a different one for personal stuff. Use different nicknames too.',
+        why: 'Keeps your private life private if your work email is ever involved in a professional leak.'
+      },
+      'Review public privacy settings on identified social profiles to limit Open Source Intelligence (OSINT) gathering by adversaries.': {
+        what: 'Hide your social profiles',
+        how: 'Set your Instagram, Twitter, or Facebook profiles to "Private" in the settings menu.',
+        why: 'Prevents strangers from seeing your personal info and using it to trick you or hack you.'
+      },
+      'Never use SMS-based 2FA. Migrate completely to Time-Based One-Time Passwords (TOTP) immediately.': {
+        what: 'Stop using text-message codes',
+        how: 'Switch from "Text Message" security to an app like Google Authenticator or Microsoft Authenticator.',
+        why: 'Hackers can steal text messages (SIM swapping), but they can\'t steal codes from inside your phone app.'
+      },
+      'Contact your cellular carrier to place a high-security PIN or "Port Freeze" on your phone number to stop SIM Swapping.': {
+        what: 'Protect your phone number',
+        how: 'Call your mobile carrier (Airtel, Jio, etc.) and ask them to "Lock" your SIM with a secret PIN.',
+        why: 'Stops thieves from stealing your phone number to gain access to your bank or email.'
+      },
+      'Your digital footprint is currently secure. Maintain operational security by utilizing a Password Manager and MFA globally.': {
+        what: 'Keep up the good work',
+        how: 'Continue using your password manager and keep MFA turned on everywhere.',
+        why: 'Proactive security is much easier than fixing a hack after it happens.'
+      },
+      'Consider using email aliasing services (like SimpleLogin or Apple Hide My Email) when signing up for new untrusted services.': {
+        what: 'Use fake email addresses',
+        how: 'Use services like "Hide My Email" so you don\'t have to give your real address to random websites.',
+        why: 'If that website gets hacked or sends spam, your real email address remains safe and hidden.'
+      },
+      'Regularly monitor your historical exposure by running this trace quarterly.': {
+        what: 'Check back every 3 months',
+        how: 'Come back to PersonaTrace every few months to see if your info appeared in any new leaks.',
+        why: 'New hacks happen every day. Regular checks help you catch leaks as soon as they occur.'
+      }
+    };
+    return map[rec] || { 
+      what: 'Strengthen Security', 
+      how: 'Review account security settings and follow platform-specific hardening guides.', 
+      why: 'To reduce your overall attack surface and protect your identity bits.' 
+    };
+  };
+
+  const categories = role === 'user' ? [
+    {
+      title: 'Actionable Security Steps',
+      icon: Lock,
+      color: 'rose',
+      items: recommendations ?? ['Rotate all breach-exposed passwords immediately.', 'Enable hardware security keys (YubiKey) where supported.'],
+      priorities: ['CRITICAL', 'HIGH', 'HIGH'],
+    }
+  ] : [
     {
       title: 'Account Security',
       icon: Lock,
@@ -348,15 +422,15 @@ const RemediationPage = ({ recommendations, dark }) => {
   return (
     <div className="w-full max-w-5xl mx-auto space-y-8 px-4 py-8">
       <div className="text-center">
-        <h2 className={`text-3xl font-bold tracking-tight mb-2 text-foreground`}>Security Hardening Checklist</h2>
-        <p className={`text-sm ${muted}`}>Prioritized recommendations based on your exposure scan results.</p>
+        <h2 className={`text-3xl font-bold tracking-tight mb-2 text-foreground`}>{role === 'user' ? 'Simple Security Checklist' : 'Security Hardening Checklist'}</h2>
+        <p className={`text-sm ${muted}`}>{role === 'user' ? 'Easy steps you can take right now to protect yourself.' : 'Prioritized recommendations based on your exposure scan results.'}</p>
       </div>
 
       {/* Progress Bar */}
       <div className={`${card} rounded-2xl p-6`}>
         <div className="flex justify-between items-center mb-3">
-          <span className="text-sm font-semibold text-foreground">Overall Hardening Progress</span>
-          <span className="text-sm font-bold text-primary">{totalChecked} / {totalItems} complete</span>
+          <span className="text-sm font-semibold text-foreground">My Safety Progress</span>
+          <span className="text-sm font-bold text-primary">{totalChecked} / {totalItems} {role === 'user' ? 'Steps' : 'items'} complete</span>
         </div>
         <div className="h-3 rounded-full overflow-hidden bg-muted/50 border border-border/50">
           <div className="h-full bg-primary rounded-full transition-all duration-500" style={{ width: totalItems ? `${(totalChecked / totalItems) * 100}%` : '0%' }} />
@@ -373,29 +447,57 @@ const RemediationPage = ({ recommendations, dark }) => {
                 <Icon className={`w-5 h-5 text-${cat.color}-500`} />
               </div>
               <h3 className={`text-base font-bold text-foreground`}>{cat.title}</h3>
-              <span className={`ml-auto text-xs ${muted}`}>{cat.items.length} items</span>
+              <span className={`ml-auto text-xs ${muted}`}>{cat.items.length} steps</span>
             </div>
             <div className="divide-y divide-border">
               {cat.items.map((rec, ri) => {
                 const key = `${ci}-${ri}`;
                 const isChecked = checked[key];
+                const s = getSimpleStep(rec);
                 return (
-                  <label key={ri} className="flex items-start gap-4 px-6 py-4 cursor-pointer transition-all hover:bg-muted/40 hover:shadow-sm">
-                    <div className="shrink-0 mt-0.5">
-                      <div
-                        onClick={() => toggle(key)}
-                        className={`w-5 h-5 rounded flex items-center justify-center border-2 transition-all ${isChecked ? 'bg-primary border-primary' : 'border-muted-foreground/30 hover:border-primary/50'}`}
-                      >
-                        {isChecked && <CheckCircle2 className="w-3.5 h-3.5 text-primary-foreground" />}
+                  <div key={ri} className="flex flex-col gap-2 px-6 py-6 transition-all hover:bg-muted/30">
+                    <div className="flex items-start gap-4 cursor-pointer" onClick={() => toggle(key)}>
+                      <div className="shrink-0 mt-0.5">
+                        <div
+                          className={`w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${isChecked ? 'bg-primary border-primary' : 'border-muted-foreground/30 hover:border-primary/50'}`}
+                        >
+                          {isChecked && <CheckCircle2 className="w-4 h-4 text-primary-foreground" />}
+                        </div>
                       </div>
+                      <div className="flex-1">
+                        <p className={`text-base font-bold transition-colors ${isChecked ? 'line-through text-muted-foreground opacity-60' : 'text-foreground'}`}>
+                          {role === 'user' ? s.what : rec}
+                        </p>
+                      </div>
+                      <span className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase shrink-0 ${priorityStyle(cat.priorities[ri] ?? 'MEDIUM')}`}>
+                        {cat.priorities[ri] ?? 'MEDIUM'}
+                      </span>
                     </div>
-                    <div className="flex-1">
-                      <p className={`text-sm font-semibold leading-relaxed transition-colors ${isChecked ? 'line-through text-muted-foreground opacity-60' : 'text-foreground'}`}>{rec}</p>
-                    </div>
-                    <span className={`text-[9px] font-black px-2.5 py-1 rounded-full uppercase shrink-0 ${priorityStyle(cat.priorities[ri] ?? 'MEDIUM')}`}>
-                      {cat.priorities[ri] ?? 'MEDIUM'}
-                    </span>
-                  </label>
+
+                    {role === 'user' && !isChecked && (
+                      <div className="ml-10 mt-3 grid gap-4">
+                        <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm">
+                          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-blue-600 mb-2 flex items-center gap-2">
+                            <Zap className="w-3 h-3" /> Step-by-Step Instructions
+                          </p>
+                          <div className="space-y-2">
+                            {s.how.split('. ').map((step, idx) => (
+                              <div key={idx} className="flex items-start gap-3">
+                                <span className="w-5 h-5 rounded bg-blue-50 text-blue-600 text-[10px] font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                                <p className="text-xs text-slate-600 font-medium leading-relaxed">{step.endsWith('.') ? step : `${step}.`}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10">
+                          <p className="text-[10px] font-black uppercase tracking-[0.25em] text-amber-600 mb-1 flex items-center gap-2">
+                            <ShieldCheck className="w-3 h-3" /> Why this protects you
+                          </p>
+                          <p className="text-xs text-slate-500 font-medium leading-relaxed italic">{s.why}</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
@@ -407,7 +509,7 @@ const RemediationPage = ({ recommendations, dark }) => {
 };
 
 // ─── EXECUTIVE REPORT COMPONENT ────────────────────────────────────────────────
-const ExecutiveReport = ({ result, email, username, dark }) => {
+const ExecutiveReport = ({ result, email, username, role, dark }) => {
   if (!result) return null;
 
   const handlePrint = () => window.print();
@@ -417,7 +519,57 @@ const ExecutiveReport = ({ result, email, username, dark }) => {
     alert('Report copied to clipboard!');
   };
 
-  const sections = [
+  const getSimpleStep = (rec) => {
+    const map = {
+      'Immediately rotate the password for the breached accounts and any platforms sharing the same credential.': 'Change your passwords on all affected platforms immediately.',
+      'Audit your password manager to ensure zero credential reuse across financial or core email accounts.': 'Check for reused passwords in your password manager.',
+      'Enforce strict Multi-Factor Authentication (MFA) on all critical nodes, preferring hardware keys (YubiKey) over standard apps.': 'Turn on 2-step verification (MFA) using an app or hardware key.',
+      'Monitor financial accounts linked to this email address for unauthorized access, and freeze credit reporting if banking details were potentially leaked.': 'Watch your bank statements for suspicious charges.',
+      'Implement data-compartmentalization: Use disconnected pseudonyms and separate emails for personal vs. professional web presence.': 'Use different usernames and emails for work and personal life.',
+      'Review public privacy settings on identified social profiles to limit Open Source Intelligence (OSINT) gathering by adversaries.': 'Make your social media profiles private.',
+      'Never use SMS-based 2FA. Migrate completely to Time-Based One-Time Passwords (TOTP) immediately.': 'Switch from text-message security to a security app.',
+      'Contact your cellular carrier to place a high-security PIN or "Port Freeze" on your phone number to stop SIM Swapping.': 'Lock your SIM card with a PIN via your carrier.',
+      'Your digital footprint is currently secure. Maintain operational security by utilizing a Password Manager and MFA globally.': 'Keep using MFA and password managers for safety.',
+      'Consider using email aliasing services (like SimpleLogin or Apple Hide My Email) when signing up for new untrusted services.': 'Use "Hide My Email" features for random websites.',
+      'Regularly monitor your historical exposure by running this trace quarterly.': 'Return here every few months to check for new hacks.'
+    };
+    return map[rec] || rec;
+  };
+
+  const sections = role === 'user' ? [
+    {
+      title: '1. Basic Overview',
+      icon: Info,
+      content: [
+        `Identity checked: ${email}`,
+        `Username checked: ${username || 'N/A'}`,
+        `Checked on: ${new Date().toLocaleString()}`,
+      ]
+    },
+    {
+      title: '2. Breach Summary',
+      icon: ShieldAlert,
+      content: result.breach_status ? [
+        `Found ${result.breach_details.length} leaks of your data.`,
+        `Major sites affected: ${result.breach_details.slice(0, 3).map(b => b.Name).join(', ')}`,
+        `Type of info leaked: Most recent leaks involved your email and passwords.`,
+      ] : ['No major leaks of your information found.']
+    },
+    {
+      title: '3. Your Risk level',
+      icon: AlertCircle,
+      content: [
+        `Risk Rating: ${result.risk_level}`,
+        `Severity: ${result.risk_score} / 100`,
+        `Reason: ${result.risk_level === 'High' ? 'Your information was found in multiple leaks and public surfaces.' : 'Only a few fragments of your identity were found.'}`,
+      ]
+    },
+    {
+      title: '4. Suggested Steps to Fix',
+      icon: ShieldCheck,
+      content: result.recommendations.slice(0, 5).map(rec => getSimpleStep(rec))
+    }
+  ] : [
     {
       title: '1. Basic Overview',
       icon: Info,
@@ -429,50 +581,40 @@ const ExecutiveReport = ({ result, email, username, dark }) => {
       ]
     },
     {
-      title: '2. Breach Summary',
+      title: '2. Detailed Forensic Compromise Analysis',
       icon: ShieldAlert,
       content: result.breach_status ? [
-        `Total breaches found: ${result.breach_details.length}`,
-        `Major breaches: ${result.breach_details.slice(0, 3).map(b => b.Name).join(', ')}`,
-        `Leaked data types: ${Array.from(new Set(result.breach_details.flatMap(b => b.DataClasses))).slice(0, 5).join(', ')}`,
+        `Verified Exposure Cluster: Found ${result.breach_details.length} historical audit matches.`,
+        ...result.breach_details.map(b => 
+          `[PLATFORM_AUDIT] ID: ${b.Name} | Site: ${b.Domain} | Vectors: ${b.DataClasses.join(', ')} | Status: Verified Compromise`
+        ),
+        `Forensic Indicator: Presence of ${result.breach_details.filter(b => b.DataClasses.includes('Passwords')).length} plaintext or hashed credential pools identified.`
       ] : ['No digital breaches found in known databases.']
     },
     {
-      title: '3. Risk Assessment',
+      title: '3. Risk Topology Assessment',
       icon: AlertCircle,
       content: [
-        `Risk Score: ${result.risk_score} / 100`,
-        `Risk Level: ${result.risk_level}`,
-        `Factor: ${result.risk_level === 'High' ? 'Significant exposure across both breach registries and social surfaces.' : 'Moderate exposure detected in identity fragments.'}`,
+        `Risk Probability Index: ${result.risk_score}% Severity`,
+        `Exposure Classification: ${result.risk_level} Impact`,
+        `Surface Analysis: ${result.risk_level === 'High' ? 'Critical correlation between breach registries and public OSINT surfaces detected.' : 'Isolated identity fragments discovered with minimal cross-linkage.'}`,
+        `Identity Correlation Certainty: ${(result.correlation_engine?.mapping_confidence ?? 0).toFixed(2)}%`
       ]
     },
     {
-      title: '4. Identity Exposure',
+      title: '4. Footprint Mapping & Alias Tracking',
       icon: Network,
       content: [
-        `Number of active accounts detected: ${result.simulated_accounts.length}`,
-        `Major platforms identified: ${result.simulated_accounts.slice(0, 5).map(a => a.platform).join(', ')}`,
-        `Username reuse: Detected unique handles across ${result.simulated_accounts.length} platforms.`,
-        `Confidence Index: ${(result.correlation_engine?.mapping_confidence ?? 0).toFixed(0)}%`
+        `Active Digital Footprints Discovered: ${result.simulated_accounts.length}`,
+        `High-Confidence Surface Tracking: ${result.simulated_accounts.slice(0, 5).map(a => a.platform).join(', ')}`,
+        `Alias Uniqueness Analysis: ${result.simulated_accounts.length > 3 ? 'Deterministic handle reuse patterns facilitate high-precision tracking.' : 'Stochastic alias usage reduces total identity surface linkability.'}`,
+        `Forensic Logic Engine: ${result.correlation_engine?.mapping_logic || 'Sherlock Investigative Trace'}`
       ]
     },
     {
-      title: '5. Key Attack Insights',
-      icon: Target,
-      content: result.attack_insights.slice(0, 3).map(insight => insight)
-    },
-    {
-      title: '6. Attack Simulation Summary',
-      icon: Crosshair,
-      content: [
-        result.attack_narrative[0].substring(0, 150) + "...",
-        "Attacker methodology focuses on correlating breach data with verified social footprints to establish a baseline for targeted phishing or account takeover.",
-      ]
-    },
-    {
-      title: '7. Recommendations Summary',
+      title: '5. Technical Hardening Recommendations',
       icon: ShieldCheck,
-      content: result.recommendations.slice(0, 5).map(rec => rec)
+      content: result.recommendations.map(rec => `[REMEDIATION_PROTOCOL] ${rec}`)
     }
   ];
 
@@ -485,8 +627,8 @@ const ExecutiveReport = ({ result, email, username, dark }) => {
       {/* Controls Row - Hidden on Print */}
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-2 print:hidden">
         <div>
-          <h2 className={`text-2xl font-bold ${textClass}`}>Executive Intelligence Report</h2>
-          <p className={`text-sm ${mutedClass}`}>Professional summary of your digital footprint and risk profile.</p>
+          <h2 className={`text-2xl font-bold ${textClass}`}>{role === 'user' ? 'Executive Intelligence Summary' : 'Executive Intelligence Report'}</h2>
+          <p className={`text-sm ${mutedClass}`}>{role === 'user' ? 'A simple overview of your digital safety and risk profile.' : 'Professional summary of your digital footprint and risk profile.'}</p>
         </div>
         <div className="flex items-center gap-3">
           <button onClick={handleCopy} className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg text-sm font-semibold text-foreground transition-all">
@@ -561,13 +703,20 @@ const ExecutiveReport = ({ result, email, username, dark }) => {
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
 export default function Dashboard({ dark, toggleTheme }) {
-  const [activeTab, setActiveTab] = useState('home');
+  const location = useLocation();
+  const role = location.state?.role || 'user';
+  const [activeTab, setActiveTab] = useState('breaches');
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [emailError, setEmailError] = useState('');
+
+  const onGraphNodeClick = useCallback((u) => {
+    setUsername(u);
+    handleScan(null, u);
+  }, [email, username]); // Include dependencies for handleScan
 
   // ── Theme-aware class helpers ──
   const bg = 'bg-background';
@@ -699,14 +848,7 @@ export default function Dashboard({ dark, toggleTheme }) {
 
   // ── RENDER: BREACH ANALYSIS ──
   const renderBreaches = () => {
-    if (!result) return (
-      <div className="w-full max-w-2xl mx-auto text-center py-32 px-4">
-        <ShieldAlert className={`w-12 h-12 mx-auto mb-4 ${muted} opacity-30`} />
-        <h3 className={`text-xl font-bold mb-2 ${text}`}>No scan data yet</h3>
-        <p className={`text-sm mb-6 ${muted}`}>Run a scan from the Home page.</p>
-        <button onClick={() => setActiveTab('home')} className="px-6 py-3 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-all">Go to Home</button>
-      </div>
-    );
+    if (!result) return renderHome();
 
     const breaches = result.breach_details ?? [];
     const rc = riskColor(result.risk_score ?? 0);
@@ -724,55 +866,56 @@ export default function Dashboard({ dark, toggleTheme }) {
 
           <div className="lg:col-span-2 flex flex-col gap-4">
             <div className={`${card} rounded-2xl p-6`}>
-              <div className="flex items-center gap-2 mb-4">
-                <User className="w-4 h-4 text-primary" />
-                <span className={`text-xs font-bold uppercase tracking-widest ${muted}`}>Traced Identity</span>
-                <span className={`ml-auto text-sm font-semibold text-foreground`}>{email}</span>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-border pb-4">
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-5 h-5 text-primary" />
+                    <span className={`text-xs font-black uppercase tracking-[0.2em] ${muted}`}>Source Email</span>
+                  </div>
+                  <span className={`text-sm font-bold text-foreground`}>{email}</span>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-3 mb-2">
+                    <User className="w-4 h-4 text-primary" />
+                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${muted}`}>Associated Handles</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {[username || email.split('@')[0], ...(result.possible_usernames ?? [])].slice(0, 6).map((u, i) => (
+                      <span key={i} className="px-3 py-1 bg-muted rounded-full text-[10px] font-bold text-foreground border border-border/50">
+                        @{u}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {[
-                  { l: 'Breaches Found', v: breaches.length, c: 'text-red-500' },
-                  { l: 'Active Profiles', v: result.simulated_accounts?.length ?? 0, c: 'text-amber-500' },
-                  { l: 'Confidence', v: `${(result.correlation_engine?.mapping_confidence ?? 0).toFixed(0)}%`, c: 'text-primary' },
-                  { l: 'Platforms Scanned', v: result.platforms_probed ?? 400, c: 'text-emerald-500' },
+                  { l: 'Breaches Found', v: breaches.length, c: 'text-red-600', desc: 'Leaked databases' },
+                  { l: 'Active Profiles', v: result.simulated_accounts?.length ?? 0, c: 'text-amber-600', desc: 'Discovered accounts' },
+                  { l: 'Correlation Score', v: `${(result.correlation_engine?.mapping_confidence ?? 0).toFixed(1)}%`, c: 'text-blue-600', desc: 'Identity certainty' },
+                  { l: 'Surface Scanned', v: result.platforms_probed ?? 450, c: 'text-emerald-600', desc: 'Platforms checked' },
                 ].map((s, i) => (
-                  <div key={i} className="bg-background border border-border rounded-xl p-4">
-                    <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-muted-foreground">{s.l}</p>
-                    <p className={`text-2xl font-black ${s.c}`}>{s.v}</p>
+                  <div key={i} className="bg-background/50 border border-border rounded-2xl p-6 shadow-sm flex flex-col items-center justify-center text-center">
+                    <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 text-muted-foreground">{s.l}</p>
+                    <p className={`text-3xl font-black mb-1 ${s.c}`}>{s.v}</p>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase">{s.desc}</p>
                   </div>
                 ))}
               </div>
             </div>
-            <div className="bg-primary border border-primary/20 rounded-2xl p-5">
-              <p className="text-xs font-bold uppercase tracking-widest mb-1 text-primary-foreground/70">Correlation Engine</p>
-              <p className="text-sm text-primary-foreground">{result.correlation_engine?.mapping_logic ?? 'Heuristic Alias Matching'}</p>
+            <div className="bg-gradient-to-r from-primary to-primary/80 border border-primary/20 rounded-2xl p-6 shadow-lg">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                   <Target className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-white">Advanced Correlation Logic</p>
+              </div>
+              <p className="text-sm text-white/90 font-medium leading-relaxed">{result.correlation_engine?.mapping_logic || 'Standard Heuristic Trace'}</p>
             </div>
           </div>
         </div>
 
-        {/* Discovered Profiles Section */}
-        {result.simulated_accounts?.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
-                <Globe className="w-4 h-4 text-amber-500" />
-              </div>
-              <h3 className={`text-lg font-bold ${text}`}>Verified Identity Surface</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {result.simulated_accounts.map((acc, i) => (
-                <a key={i} href={acc.url} target="_blank" rel="noopener noreferrer" 
-                   className={`${card} rounded-xl p-4 flex items-center justify-between group hover:border-amber-500/50 transition-all no-underline`}>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-amber-500 uppercase tracking-tighter">{acc.platform}</span>
-                    <span className={`text-sm font-semibold ${text} truncate max-w-[120px]`}>@{acc.username}</span>
-                  </div>
-                  <Link2 className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
 
         <div className="flex items-center gap-3 mt-12">
           <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
@@ -849,20 +992,31 @@ export default function Dashboard({ dark, toggleTheme }) {
     </div>
   );
 
-  const renderRemediation = () => (
-    <RemediationPage recommendations={result?.recommendations} dark={dark} />
-  );
-
   return (
     <div className={`min-h-screen ${bg} ${text} font-sans transition-colors duration-300`}>
-      <Navbar dark={dark} toggleTheme={toggleTheme} activeTab={activeTab} setActiveTab={setActiveTab} />
+      <Navbar dark={dark} toggleTheme={toggleTheme} activeTab={activeTab} setActiveTab={setActiveTab} role={role} />
       <main className="min-h-[calc(100vh-64px)] flex flex-col items-center">
-        {activeTab === 'home' && renderHome()}
         {activeTab === 'breaches' && renderBreaches()}
-        {activeTab === 'graph' && renderGraph()}
+        {activeTab === 'graph' && (
+          <div className="w-full max-w-7xl mx-auto px-4 py-8 animate-in fade-in zoom-in-95 slide-in-from-bottom-8 duration-[600ms] ease-out fill-mode-both">
+            {!result ? (
+              <div className="text-center py-32">
+                <Network className={`w-12 h-12 mx-auto mb-4 opacity-20 ${muted}`} />
+                <p className={`font-bold text-foreground`}>Run a scan first.</p>
+              </div>
+            ) : (
+              <div className={`${card} rounded-3xl overflow-hidden`} style={{ height: '75vh', minHeight: '600px' }}>
+                <IdentityGraph 
+                  data={result.graph_data ?? { nodes: [], edges: [] }} 
+                  onNodeClick={onGraphNodeClick} 
+                />
+              </div>
+            )}
+          </div>
+        )}
         {activeTab === 'simulation' && renderSimulation()}
-        {activeTab === 'remediation' && renderRemediation()}
-        {activeTab === 'report' && <ExecutiveReport result={result} email={email} username={username} dark={dark} />}
+        {activeTab === 'remediation' && <RemediationPage recommendations={result?.recommendations} role={role} dark={dark} />}
+        {activeTab === 'report' && <ExecutiveReport result={result} email={email} username={username} role={role} dark={dark} />}
       </main>
 
       {loading && (
